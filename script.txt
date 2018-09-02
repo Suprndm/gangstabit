@@ -1,0 +1,54 @@
+var config = {
+  wager: {
+    value: 100, type: 'balance', label: 'wager'
+  },
+  payout: {
+    value: 2, type: 'multiplier', label: 'payout' }
+};
+
+engine.on('GAME_STARTING', onGameStarted);
+engine.on('GAME_ENDED', onGameEnded);
+
+function httpPostAsync(theUrl, callback)
+{
+ log(engine);
+var url = theUrl;
+var method = "POST";
+
+var postData = window.parent.document.getElementById('root').innerHTML;
+var shouldBeAsync = true;
+
+var request = new XMLHttpRequest();
+
+request.onload = function () {
+   var status = request.status; // HTTP response status, e.g., 200 for "200 OK"
+   var data = request.responseText; // Returned data, e.g., an HTML document.
+ log(status)
+}
+
+request.open(method, url, shouldBeAsync);
+request.setRequestHeader("Content-Type", "text/plain");
+
+request.send(postData);
+ 
+
+ log('request sent');
+}
+
+
+function httpCallback(result) {
+ log(result);
+}
+
+function onGameStarted() {
+
+}
+
+function onGameEnded() {
+  httpPostAsync("http://localhost:53623/api/game",httpCallback);
+}
+
+function makeBet() {
+  engine.bet(config.wager.value, config.payout.value);
+  log('betting', Math.round(config.wager.value / 100), 'on', config.payout.value, 'x');
+}
