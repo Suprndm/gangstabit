@@ -25,7 +25,48 @@ namespace Gangstabit.Business.Service
                 var multiplier = double.Parse(truncated1, CultureInfo.InvariantCulture);
                 var htmlSplit = html.Split('\r');
 
-                return new Game() { EndDate = endDate };
+                var game = new Game()
+                {
+                    EndDate = endDate,
+                    Multiplier = multiplier
+                };
+
+                var bets = new List<Bet>();
+
+                // Players
+                var split5 = html.Split(new string[] { "href=\"/user/" }, StringSplitOptions.None);
+                for (int i = 1; i < split5.Length; i++)
+                {
+                    var playerPart = split5[i];
+                    var split6 = playerPart.Split('"');
+
+                    var playerName = split6[0];
+                    var split7 = playerPart.Split(new string[] { "<td class=\"text-right\">" }, StringSplitOptions.None);
+
+                    var split8 = split7[1].Split(new string[] { "</td>" }, StringSplitOptions.None);
+                    var truncated2 = split8[0].Remove(split8[0].Length - 1);
+                    var target = double.Parse(truncated2, CultureInfo.InvariantCulture);
+
+                    var split9 = split7[2].Split(new string[] { "</td>" }, StringSplitOptions.None);
+                    var wage = double.Parse(split9[0], CultureInfo.InvariantCulture);
+
+                    var bet = new Bet()
+                    {
+                        Game = game,
+                        Player = new Player()
+                        {
+                            Name = playerName
+                        },
+                        Target = target,
+                        Wage = wage
+                    };
+
+                    bets.Add(bet);
+                }
+
+                game.Bets = bets;
+
+                return game;
             }
             catch (Exception e)
             {
