@@ -19,9 +19,10 @@ namespace Gangstabit.Business.Service
                 var endDate = new DateTime(long.Parse(split2.First()));
 
                 // Multiplier
-                var split3 = html.Split(new string[]{"\" style=\"color: rgb(46, 204, 113);\">"}, StringSplitOptions.None);
+                var split3 = html.Split(new string[]{"\" style=\"color: rgb("}, StringSplitOptions.None);
                 var split4 = split3[1].Split(new string[] { "</a></td>" }, StringSplitOptions.None);
-                var truncated1 = split4[0].Remove(split4[0].Length - 1);
+                var split4b = split4[0].Split(new string[] { ">" }, StringSplitOptions.None);
+                var truncated1 = split4b[1].Remove(split4b[1].Length - 1);
                 var multiplier = double.Parse(truncated1, CultureInfo.InvariantCulture);
                 var htmlSplit = html.Split('\r');
 
@@ -45,7 +46,12 @@ namespace Gangstabit.Business.Service
 
                     var split8 = split7[1].Split(new string[] { "</td>" }, StringSplitOptions.None);
                     var truncated2 = split8[0].Remove(split8[0].Length - 1);
-                    var target = double.Parse(truncated2, CultureInfo.InvariantCulture);
+                    double target = 0;
+
+                    if (!string.IsNullOrEmpty(truncated2))
+                    {
+                        target = double.Parse(truncated2, CultureInfo.InvariantCulture);
+                    }
 
                     var split9 = split7[2].Split(new string[] { "</td>" }, StringSplitOptions.None);
                     var wage = double.Parse(split9[0], CultureInfo.InvariantCulture);

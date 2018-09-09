@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
+using System.Web;
 using Gangstabit.Business.Service;
 using Gangstabit.DataAccess;
 
@@ -29,20 +31,35 @@ namespace Gangstabit.Uploader
             var gameRepository = new GameRepository();
 
 
-            foreach (string file in Directory.EnumerateFiles(
+            var files = Directory.EnumerateFiles(
                 @"C:\Gangstabit",
                 "*",
-                SearchOption.AllDirectories)
-            )
+                SearchOption.AllDirectories).ToList();
+
+            int count = 0;
+            foreach (string file in files)
             {
+                try
+                {
+                    var logReader = new System.IO.StreamReader(file);
+                    var html = await logReader.ReadToEndAsync();
+                    html = HttpUtility.HtmlDecode(html);
+                    var game = interpretor.InterpreteGameFromHtml(html, file);
+                    logReader.Dispose();
 
-                var logReader = new System.IO.StreamReader(file);
-                var html = await logReader.ReadToEndAsync();
-                var game = interpretor.InterpreteGameFromHtml(html, file);
-                logReader.Dispose();
+                    Console.WriteLine($"{file} interpreted");
+                    await gameRepository.SaveGameAsync(game);
+                    Console.WriteLine($"{file} saved");
 
-                await gameRepository.SaveGameAsync(game);
-                Console.WriteLine($"interprated game at {game.EndDate}");
+                    count++;
+                    Console.WriteLine($"{count} / {files.Count()} {(double)count/ files.Count*100}%");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
+
             }
         }
 

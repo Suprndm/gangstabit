@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Gangstabit.Business\Gangstabit.Business.csproj" />
     <ProjectReference Include="..\Gangstabit.DataAccess\Gangstabit.DataAccess.csproj" />
   </ItemGroup>
 
