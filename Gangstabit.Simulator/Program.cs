@@ -32,20 +32,21 @@ namespace Gangstabit.Simulator
         {
             var results = new ConcurrentDictionary<ControllerSettings, Player>();
             var simulationRunner = new SimulationRunner();
-            var games = await simulationRunner.LoadGames(new DateTime(2018, 09, 02, 16, 32, 0), new DateTime(2018, 09, 9, 13, 0, 0)).ConfigureAwait(false);
+            var games = await simulationRunner.LoadGames(new DateTime(2018, 09, 01, 06, 30, 0), new DateTime(2018, 09, 12, 17, 30, 0)).ConfigureAwait(false);
+            games = games.OrderBy(g => g.Id).ToList();
             simulationRunner = new SimulationRunner();
             var player = new Player()
             {
-                Wallet = 37500
+                Wallet = 45000
             };
 
             var controllerSettings = new ControllerSettings()
             {
-                BaseBet = 34,
-                Multiplier = 2.28,
-                PassGames = 9,
-                Reducer = 0.03,
-                Target = 1.17
+                BaseBet = 5,
+                Multiplier =2.7,
+                PassGames = 3,
+                Reducer = 0.005,
+                Target = 2.02
             };
 
             var controller = new RouletteController(
