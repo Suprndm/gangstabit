@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Gangstabit.Business;
 using Gangstabit.Business.Controllers;
@@ -12,8 +13,11 @@ namespace Gangstabit.Simulator
 {
     class Program
     {
+        private static System.Threading.Timer timer;
+
         static void Main(string[] args)
         {
+            Console.WriteLine("hello");
             try
             {
                 MainAsync().Wait();
@@ -30,23 +34,24 @@ namespace Gangstabit.Simulator
 
         static async Task MainAsync()
         {
+            int initialWallet = 45000;
             var results = new ConcurrentDictionary<ControllerSettings, Player>();
             var simulationRunner = new SimulationRunner();
-            var games = await simulationRunner.LoadGames(new DateTime(2018, 09, 01, 06, 30, 0), new DateTime(2018, 09, 12, 17, 30, 0)).ConfigureAwait(false);
+            var games = await simulationRunner.LoadGames(new DateTime(2018, 09, 1, 06, 30, 0), new DateTime(2018, 09, 12, 17, 30, 0)).ConfigureAwait(false);
             games = games.OrderBy(g => g.Id).ToList();
             simulationRunner = new SimulationRunner();
             var player = new Player()
             {
-                Wallet = 45000
+                Wallet = initialWallet
             };
 
             var controllerSettings = new ControllerSettings()
             {
-                BaseBet = 5,
-                Multiplier =2.7,
-                PassGames = 3,
-                Reducer = 0.005,
-                Target = 2.02
+                BaseBet = 1,
+                Multiplier =3.03,
+                PassGames = 4,
+                Reducer = 0.007,
+                Target = 7.9
             };
 
             var controller = new RouletteController(
@@ -59,40 +64,51 @@ namespace Gangstabit.Simulator
             simulationRunner.StartWith(player, controller, games);
             player.ComputeStats();
             player.ControllerResults = controller.ToString();
+            var controllerResults = controller.GetControllerResults();
+
+            var simulationResult = new SimulationResult(controllerSettings, controllerResults, player, initialWallet);
             results.TryAdd(controllerSettings, player);
             Console.WriteLine(player);
             Console.WriteLine(controller);
+            Console.WriteLine(simulationResult);
 
         }
 
         static async Task MainSearchAsync()
         {
-            var results = new ConcurrentDictionary<ControllerSettings, Player>();
-                    var simulationRunner = new SimulationRunner();
-            var games = await simulationRunner.LoadGames(new DateTime(2018, 09, 02, 16, 32, 0), new DateTime(2018, 09, 9, 13, 0, 0)).ConfigureAwait(false);
-            games.LightShuffle();
-            var allGames = new List<List<Game>>();
-            for (int i = 0; i < 10; i++)
-            {
-                games.LightShuffle();
-                allGames.Add(games.ToList());
-            }
-           
-            //games = games.OrderBy(g => g.Id).ToList();
+            int initialWallet = 45000;
             int simulationCount = 0;
+            var results = new ConcurrentDictionary<double, SimulationResult>();
+                    var simulationRunner = new SimulationRunner();
+
+            timer = new Timer((e) =>
+            {
+                try
+                {
+                    AnalyzeResults(results.ToList(), simulationCount);
+                    Console.WriteLine($"Saved at {simulationCount} runs");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
+            }, null, TimeSpan.FromMilliseconds(5000), TimeSpan.FromMilliseconds(5000));
+
+            var games = await simulationRunner.LoadGames(new DateTime(2018, 09, 1, 06, 30, 0), new DateTime(2018, 09, 12, 17, 30, 0)).ConfigureAwait(false);
+            games = games.OrderBy(g => g.Id).ToList();
+
+            Console.WriteLine("launching Foreach");
+
             Parallel.ForEach(Enumerable.Range(1, 10000000),
                 new ParallelOptions {MaxDegreeOfParallelism = 8},
                 (count) =>
                 {
-                    var players = new List<Player>();
                     var controllerSettings = GenerateRandomControllerSettings();
-                    foreach (var allGame in allGames)
-                    {
                         simulationCount++;
                         simulationRunner = new SimulationRunner();
                         var player = new Player()
                         {
-                            Wallet = 37500
+                            Wallet = 45000
                         };
 
                         var controller = new RouletteController(
@@ -102,77 +118,45 @@ namespace Gangstabit.Simulator
                             controllerSettings.PassGames,
                             controllerSettings.Reducer);
 
-                        simulationRunner.StartWith(player, controller, allGame);
+                        simulationRunner.StartWith(player, controller, games);
                         player.ComputeStats();
                         player.Bets.Clear();
-                        player.ControllerResults = controller.ToString();
-                        players.Add(player);
-                    }
-                    if (players.Any(p => p.Roi <= 0 ||  double.IsNaN(p.Roi)))
-                    {
+                    var controllerResults = controller.GetControllerResults();
 
-                    }
-                    else
-                    {
-                        var averagePlayer = new Player()
-                        {
-                            Benefits = players.Sum(p => p.Benefits) / players.Count,
-                            Roi = players.Sum(p => p.Roi) / players.Count,
-                            Wallet = players.Sum(p => p.Wallet) / players.Count,
-                        };
-                        results.TryAdd(controllerSettings, averagePlayer);
-                    }
-
-                    //Console.WriteLine(player);
-                    //Console.WriteLine(controller);
-
-                    if (simulationCount % 5000 == 0)
-                    {
-                        try
-                        {
-                            AnalyzeResults(results.ToList(), simulationCount);
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine(e);
-                        }
-                    }
+                    var simulationResult = new SimulationResult(controllerSettings, controllerResults, player, initialWallet);
+                    player.ControllerResults = controller.ToString();
+                    results.TryAdd(simulationResult.TotalScore, simulationResult);
                 });
         }
 
-        static void AnalyzeResults(IList<KeyValuePair<ControllerSettings,Player>> results, int count)
+        static void AnalyzeResults(IList<KeyValuePair<double, SimulationResult>> results, int count)
         {
             try
             {
-                var orderedResults = results.OrderByDescending(r => r.Value.Benefits).ToList();
+                var orderedResults = results.OrderByDescending(r => r.Key).Take(20).ToList();
 
-                for (int i = 0; i < 10; i++)
-                {
-                    var item = orderedResults[i];
-                    var json = JsonConvert.SerializeObject(item);
-                    var logPath = $@"C:\GangstabitResults\results_best_{i}_{count}.json";
-                    var logFile = System.IO.File.Create(logPath);
-                    var logWriter = new System.IO.StreamWriter(logFile);
-                    logWriter.WriteLine(json);
-                    logWriter.Dispose();
-                }
+                var json = JsonConvert.SerializeObject(orderedResults);
+                var logPath = $@"C:\GangstabitResults\results_best20_{DateTime.UtcNow.ToString("MM-dd-yyyy")}_{count}.json";
+                var logFile = System.IO.File.Create(logPath);
+                var logWriter = new System.IO.StreamWriter(logFile);
+                logWriter.WriteLine(json);
+                logWriter.Dispose();
             }
             catch (Exception e)
             {
+                Console.WriteLine(e);
             }
-           
-       
         }
 
         static ControllerSettings GenerateRandomControllerSettings()
         {
             return new ControllerSettings
             {
-                BaseBet = StaticRandom.Rand(100),
-                Target = (double)(StaticRandom.Rand(300)+10)/10,
+                BaseBet = StaticRandom.Rand(20),
+                Target = (double)(StaticRandom.Rand(100)+10)/10,
                 Multiplier = (double)(StaticRandom.Rand(300)+50)/100,
-                PassGames =StaticRandom.Rand(20),
-                Reducer = (double)StaticRandom.Rand(10)/100,
+                PassGames =StaticRandom.Rand(10),
+                Reducer = (double)StaticRandom.Rand(10)/1000,
             };
         }
     }

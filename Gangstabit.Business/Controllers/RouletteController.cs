@@ -22,7 +22,8 @@ namespace Gangstabit.Business.Controllers
         private double _minWallet;
         private readonly int _passGames;
         private int _currentPassedGame;
-
+        private double _minBalance;
+        private double _maxBalance;
         private double _maxWallet;
         private readonly double _reducer;
 
@@ -46,11 +47,29 @@ namespace Gangstabit.Business.Controllers
             _consecutiveCashLoss = 0;
         }
 
+        private double ComputePreviousGamesBalance(IList<Game> previousGames, int range)
+        {
+            if (previousGames.Count < range) return 0;
+
+            double balance = 0;
+
+            var selectedGames = previousGames.TakeLast(range);
+
+            foreach (var previousGame in selectedGames)
+            {
+                balance += previousGame.TotalPlayerEarn - previousGame.TotalPlayerLost;
+            }
+
+            return balance;
+        }
+
         public Decision Play(IList<Game> previousGames)
         {
 
             bool passGame = StaticRandom.Rand(10) == 0;
-
+            var balance = ComputePreviousGamesBalance(previousGames, 100);
+            _minBalance = Math.Min(_minBalance, balance);
+            _maxBalance = Math.Max(_maxBalance, balance);
             var wage = Math.Min(_baseBet, _player.Wallet);
 
             if (_player.Bets.Any())
@@ -58,8 +77,9 @@ namespace Gangstabit.Business.Controllers
                 var previousBet = _player.Bets.Last();
                 if (previousBet.Wage > 0 && previousBet.IsWon == false)
                 {
+                    var modifier = balance / 30000000;
                     var multplier = (_multiplier - _reducer  * _consecutiveLossCount * _consecutiveLossCount * _consecutiveLossCount);
-
+                    //multplier = multplier + modifier;
                     if (multplier < 0.75)
                     {
                         multplier = 0.75;
@@ -68,6 +88,12 @@ namespace Gangstabit.Business.Controllers
                     _currentBet = _currentBet * multplier ;
                     _consecutiveLossCount++;
                     _consecutiveCashLoss += previousBet.Wage;
+
+                    //if (balance > 1000000)
+                    //{
+                    //    _currentPassedGame = 0;
+                    //}
+
                     //if (_consecutiveLossCount == 10)
                     //{
                     //    _currentPassedGame =2;
@@ -115,10 +141,22 @@ namespace Gangstabit.Business.Controllers
             };
         }
 
+        public ControllerResults GetControllerResults()
+        {
+            return new ControllerResults()
+            {
+                MaxCashLoss = _maxConsecutiveCashLoss,
+                MaxConsecutiveLoss = _maxConsecutiveLossCount,
+                MaxWage = _maxWage,
+                MaxWallet = _maxWallet,
+                MinWallet = _minWallet,
+            };
+        }
+
         public override string ToString()
         {
             return $"MaxWage: {_maxWage}\n ConsecutiveLoss : {_maxConsecutiveLossCount} \n minWallet: {_minWallet} \n maxWallet : {_maxWallet}" +
-                   $"\nMaxCashLoss {_maxConsecutiveCashLoss}";
+                   $"\nMaxCashLoss {_maxConsecutiveCashLoss} balance [{_minBalance}, {_maxBalance}]";
         }
 
         public void Dispose()

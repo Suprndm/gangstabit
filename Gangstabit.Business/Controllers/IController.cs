@@ -8,5 +8,6 @@ namespace Gangstabit.Business.Controllers
     public interface IController:IDisposable
     {
         Decision Play(IList<Game> previousGames);
+        ControllerResults GetControllerResults();
     }
 }

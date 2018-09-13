@@ -22,7 +22,7 @@ namespace Gangstabit.Business.Model
         public IList<Bet> Bets { get; set; }
 
         public double TotalWage { get; set; }
-        public double GamesCount { get; set; }
+        public int GamesCount { get; set; }
         public double TotalEarn { get; set; }
         public double TotalLost { get; set; }
 

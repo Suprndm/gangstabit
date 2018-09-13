@@ -28,6 +28,11 @@ namespace Gangstabit.Business.Controllers
             };
         }
 
+        public ControllerResults GetControllerResults()
+        {
+            return new ControllerResults();
+        }
+
         public void Dispose()
         {
         }

@@ -61,7 +61,7 @@ namespace Gangstabit.Simulator
 
                 if (player.Wallet <= 0)
                 {
-                    Console.WriteLine("Dead");
+                    //Console.WriteLine("Dead");
                     break;
                 }
             }
