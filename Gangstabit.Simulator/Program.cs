@@ -37,7 +37,7 @@ namespace Gangstabit.Simulator
             int initialWallet = 45000;
             var results = new ConcurrentDictionary<ControllerSettings, Player>();
             var simulationRunner = new SimulationRunner();
-            var games = await simulationRunner.LoadGames(new DateTime(2018, 09, 1, 06, 30, 0), new DateTime(2018, 09, 12, 17, 30, 0)).ConfigureAwait(false);
+            var games = await simulationRunner.LoadGames(new DateTime(2018, 09, 13, 22, 30, 0), new DateTime(2018, 09, 14, 6, 30, 0)).ConfigureAwait(false);
             games = games.OrderBy(g => g.Id).ToList();
             simulationRunner = new SimulationRunner();
             var player = new Player()
@@ -47,11 +47,11 @@ namespace Gangstabit.Simulator
 
             var controllerSettings = new ControllerSettings()
             {
-                BaseBet = 1,
-                Multiplier =3.03,
-                PassGames = 4,
-                Reducer = 0.007,
-                Target = 7.9
+                BaseBet = 4,
+                Multiplier =2.09,
+                PassGames = 7,
+                Reducer = 0.001,
+                Target = 7
             };
 
             var controller = new RouletteController(
@@ -76,7 +76,7 @@ namespace Gangstabit.Simulator
 
         static async Task MainSearchAsync()
         {
-            int initialWallet = 45000;
+            int initialWallet = 28000;
             int simulationCount = 0;
             var results = new ConcurrentDictionary<double, SimulationResult>();
                     var simulationRunner = new SimulationRunner();
@@ -94,7 +94,7 @@ namespace Gangstabit.Simulator
                 }
             }, null, TimeSpan.FromMilliseconds(5000), TimeSpan.FromMilliseconds(5000));
 
-            var games = await simulationRunner.LoadGames(new DateTime(2018, 09, 1, 06, 30, 0), new DateTime(2018, 09, 12, 17, 30, 0)).ConfigureAwait(false);
+            var games = await simulationRunner.LoadGames(new DateTime(2018, 09, 13, 22, 30, 0), new DateTime(2018, 09, 14, 6, 30, 0)).ConfigureAwait(false);
             games = games.OrderBy(g => g.Id).ToList();
 
             Console.WriteLine("launching Foreach");
